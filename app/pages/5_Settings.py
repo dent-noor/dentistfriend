@@ -84,14 +84,30 @@ def show_treatments(database, doctor_email, doctor_settings):
         if procedures:
             to_delete = []
 
+            # Add custom CSS to align the button
+            st.markdown("""
+                <style>
+                .stButton button {
+                    margin-top: 30px;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
             # Display existing procedures with option to edit or delete
             for i, procedure in enumerate(procedures):
-                cols = st.columns([4, 1])
+                cols = st.columns([8, 1])  # Adjust ratio to give more space to input
                 with cols[0]:
-                    new_name = st.text_input(f"Procedure {i+1}", value=procedure, key=f"procedure_{i}").title()
+                    new_name = st.text_input(
+                        f"Procedure {i + 1}",
+                        value=procedure,
+                        key=f"procedure_{i}"
+                    ).title()
                     procedures[i] = new_name
                 with cols[1]:
-                    if st.button("❌", key=f"delete_procedure_{i}"):
+                    if st.button(
+                        "❌",
+                        key=f"delete_procedure_{i}",
+                        use_container_width=True):
                         to_delete.append(i)
 
             # Handle procedure deletion
