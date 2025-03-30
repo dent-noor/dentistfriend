@@ -341,7 +341,7 @@ def reset_password():
             try:
                 # Setup action code settings for Firebase password reset
                 action_code_settings = auth.ActionCodeSettings(
-                    url="http://127.0.0.1:8501/reset-password'",  # Replace with your app's URL as needed
+                    url="https://squid-app-yfhsi.ondigitalocean.app/reset-password'",  # Replace with your app's URL as needed
                     handle_code_in_app=False
                 )
                 # Generate the password reset link
