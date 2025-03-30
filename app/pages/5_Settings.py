@@ -25,7 +25,8 @@ def main():
     tab1, tab2, tab3 = st.tabs(["Treatment Procedures", "Dental Chart", "Currency Settings"])
 
     with tab1:
-        show_treatments(database, doctor_email, doctor_settings)
+        # Show the updated treatments management interface
+        manage_treatments(database, doctor_email, doctor_settings)
 
     with tab2:
         show_chart()
@@ -66,8 +67,24 @@ def save_settings(database, doctor_email, settings):
         st.error(f"Settings save failed: {e}")
 
 
-def show_treatments(database, doctor_email, doctor_settings):
-    """Display and manage treatment procedures and price settings."""
+def manage_treatments(database, doctor_email, doctor_settings):
+    """Display and manage treatment procedures, prices, and delete functionality."""
+
+    # Add custom CSS to align the delete button
+    st.markdown("""
+        <style>
+        .stButton button {
+            margin-top: 25px;  /* Aligns with input box */
+            height: 42px;      /* Match input box height */
+            padding: 0px;      /* Reduce padding */
+        }
+        div[data-testid="column"] > div:has(button) {
+            height: fit-content;
+            flex-grow: 0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.header("Treatment Procedures Configuration")
     st.info("Manage your treatment procedures and their associated prices")
 
@@ -78,63 +95,70 @@ def show_treatments(database, doctor_email, doctor_settings):
     procedures = doctor_settings.get("treatment_procedures", [])
     prices = doctor_settings.get("price_estimates", {})
 
-    # Treatment procedures section
-    st.subheader("Treatment Procedures")
-    with st.container(border=True):
-        if procedures:
-            to_delete = []
+    # Container for treatment procedures
+    if procedures:
+        to_delete = []
 
-            # Add custom CSS to align the button
-            st.markdown("""
-                <style>
-                .stButton button {
-                    margin-top: 30px;
-                }
-                </style>
-            """, unsafe_allow_html=True)
+        for i, procedure in enumerate(procedures):
+            cols = st.columns([5, 3, 0.6])  # Adjusted column ratio for better alignment
+            with cols[0]:
+                new_name = st.text_input(
+                    f"Procedure {i + 1}",
+                    value=procedure,
+                    key=f"procedure_{i}"
+                ).title()
+                procedures[i] = new_name
 
-            # Display existing procedures with option to edit or delete
-            for i, procedure in enumerate(procedures):
-                cols = st.columns([8, 1])  # Adjust ratio to give more space to input
-                with cols[0]:
-                    new_name = st.text_input(
-                        f"Procedure {i + 1}",
-                        value=procedure,
-                        key=f"procedure_{i}"
-                    ).title()
-                    procedures[i] = new_name
-                with cols[1]:
-                    if st.button(
-                        "❌",
-                        key=f"delete_procedure_{i}",
-                        use_container_width=True):
-                        to_delete.append(i)
+            with cols[1]:
+                prices[procedure] = st.number_input(
+                    f"Price ({currency_symbol})",
+                    min_value=0.0,
+                    value=float(prices.get(procedure, 0)),
+                    step=10.0,
+                    format="%.2f",
+                    key=f"price_{procedure}"
+                )
 
-            # Handle procedure deletion
-            if to_delete:
-                for index in sorted(to_delete, reverse=True):
-                    procedure_name = procedures[index]
-                    procedures.pop(index)
-                    if procedure_name in prices:
-                        prices.pop(procedure_name)
+            with cols[2]:
+                if st.button("❌", key=f"delete_procedure_{i}", use_container_width=True):
+                    to_delete.append(i)
 
-                # Update settings and save to database
-                doctor_settings["treatment_procedures"] = procedures
-                doctor_settings["price_estimates"] = prices
-                save_settings(database, doctor_email, doctor_settings)
-                st.success("Treatment procedures have been successfully updated")
-                st.rerun()
-        else:
-            st.caption("No procedures added yet.")
+        # Handle deletion
+        if to_delete:
+            for index in sorted(to_delete, reverse=True):
+                procedure_name = procedures.pop(index)
+                if procedure_name in prices:
+                    prices.pop(procedure_name)
 
-        # Add new procedure input
-        new_procedure = st.text_input("Add New Procedure", key="new_procedure").title()
-        if st.button("➕ Add Procedure", use_container_width=True):
+            doctor_settings["treatment_procedures"] = procedures
+            doctor_settings["price_estimates"] = prices
+            save_settings(database, doctor_email, doctor_settings)
+            st.success("Treatment procedures have been successfully updated")
+            st.rerun()
+
+    else:
+        st.caption("No procedures added yet.")
+
+    # Add new procedure section
+    with st.expander("Add New Procedure", expanded=True):
+        st.subheader("Create a New Procedure")
+        cols = st.columns([5, 3])
+        with cols[0]:
+            new_procedure = st.text_input("Procedure Name", key="new_procedure").title()
+        with cols[1]:
+            new_price = st.number_input(
+                f"Price ({currency_symbol})",
+                min_value=0.0,
+                step=10.0,
+                format="%.2f",
+                key="new_price"
+            )
+
+        if st.button("Save Procedure", use_container_width=True):
             if new_procedure:
-                # Check if procedure already exists to avoid duplicates
                 if new_procedure not in procedures:
                     procedures.append(new_procedure)
-                    prices[new_procedure] = 0
+                    prices[new_procedure] = new_price
                     doctor_settings["treatment_procedures"] = procedures
                     doctor_settings["price_estimates"] = prices
                     save_settings(database, doctor_email, doctor_settings)
@@ -142,56 +166,29 @@ def show_treatments(database, doctor_email, doctor_settings):
                     st.rerun()
                 else:
                     st.error("This procedure already exists in your list")
-
-    # Price estimates section
-    st.subheader(f"Price Estimates (in {currency_symbol})")
-    with st.container(border=True):
-        if procedures:
-            # Display price input fields for each procedure
-            for procedure in procedures:
-                old_price = prices.get(procedure, 0)
-                new_price = st.number_input(
-                    f"Price for {procedure}",
-                    min_value=0.0,
-                    value=float(old_price),
-                    step=10.0,
-                    format="%.2f",
-                    key=f"price_{procedure}"
-                )
-
-                if new_price != old_price:
-                    prices[procedure] = new_price
-
-            # Save updated prices to database
-            if st.button("✔️ Save Price", use_container_width=True):
-                doctor_settings["price_estimates"] = prices
-                save_settings(database, doctor_email, doctor_settings)
-                st.success("Price estimates have been successfully updated")
-        else:
-            st.caption("Add procedures first to set prices.")
+            else:
+                st.error("Please provide a valid procedure name")
 
 
 def show_chart():
-    """Display dental chart configuration options including the standard teeth notation system."""
+    """Display dental chart configuration options."""
     st.header("Dental Chart Configuration")
     st.info("Customize your dental chart settings and health conditions")
 
-    # Information about the dental notation system
     with st.expander("Dental Notation System", expanded=True):
         st.subheader("FDI World Dental Federation Notation (ISO 3950)")
         st.info("""
-        This application uses the FDI (Fédération Dentaire Internationale) notation system, also known as ISO 3950.
+            This application uses the FDI (Fédération Dentaire Internationale) notation system, also known as ISO 3950.
 
-        This two-digit system divides the mouth into four quadrants:
-        - Upper Right (1): teeth 18-11
-        - Upper Left (2): teeth 21-28
-        - Lower Right (4): teeth 48-41
-        - Lower Left (3): teeth 31-38
+            This two-digit system divides the mouth into four quadrants:
+            - Upper Right (1): teeth 18-11
+            - Upper Left (2): teeth 21-28
+            - Lower Right (4): teeth 48-41
+            - Lower Left (3): teeth 31-38
 
-        The first digit indicates the quadrant, while the second digit indicates the tooth position from the midline.
+            The first digit indicates the quadrant, while the second digit indicates the tooth position from the midline.
         """)
 
-        # Visual representation of the dental quadrants
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("**Upper Jaw**")
@@ -200,35 +197,12 @@ def show_chart():
             st.markdown("**Lower Jaw**")
             st.markdown("48 47 46 45 44 43 42 41 | 31 32 33 34 35 36 37 38")
 
-    # Display tooth health conditions (read-only)
-    st.subheader("Tooth Health Conditions")
-    st.error("NOTE: Health conditions cannot be modified at this time (under development)", icon="⚠️")
-    conditions = default_data.get("health_conditions", [])
-
-    with st.container(border=True):
-        if conditions:
-            # Show each condition in a disabled text input
-            for i, condition in enumerate(conditions):
-                st.text_input(
-                    f"Condition {i+1}",
-                    value=condition,
-                    key=f"condition_{i}",
-                    disabled=True
-                )
-        else:
-            st.caption("No health conditions available.")
-
-    # Future enhancement section
-    st.subheader("Dental Chart Customization")
-    st.error("NOTE: Additional customization options are under development", icon="⏳")
-
 
 def show_currency(database, doctor_email, doctor_settings):
     """Display and manage currency settings."""
     st.header("Currency Settings")
     st.info("Set your preferred currency for price estimates")
 
-    # Get current currency from settings
     current_currency = doctor_settings.get("currency", "SAR")
 
     # Currency options
@@ -237,22 +211,21 @@ def show_currency(database, doctor_email, doctor_settings):
         "INR": "Indian Rupee (₹)"
     }
 
-    # Display currency selection
-    with st.container(border=True):
-        selected_currency = st.selectbox(
-            "Select Currency",
-            options=list(currency_options.keys()),
-            format_func=lambda x: currency_options[x],
-            index=list(currency_options.keys()).index(current_currency) if current_currency in currency_options else 0
-        )
+    selected_currency = st.selectbox(
+        "Select Currency",
+        options=list(currency_options.keys()),
+        format_func=lambda x: currency_options[x],
+        index=list(currency_options.keys()).index(current_currency)
+        if current_currency in currency_options
+        else 0
+    )
 
-        # Save button for currency changes
-        if st.button("✔️ Save Currency Preference", use_container_width=True):
-            if selected_currency != current_currency:
-                doctor_settings["currency"] = selected_currency
-                save_settings(database, doctor_email, doctor_settings)
-                st.success(f"Currency updated to {currency_options[selected_currency]}")
-                st.rerun()
+    if st.button("✔️ Save Currency Preference", use_container_width=True):
+        if selected_currency != current_currency:
+            doctor_settings["currency"] = selected_currency
+            save_settings(database, doctor_email, doctor_settings)
+            st.success(f"Currency updated to {currency_options[selected_currency]}")
+            st.rerun()
 
 
 main()
