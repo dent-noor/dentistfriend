@@ -1,11 +1,22 @@
 # https://docs.streamlit.io/develop/api-reference/configuration/config.toml
 
 [theme]
-base = "dark"
-primaryColor = "#5588ff"
-# backgroundColor = "#f5f8ff"
-# secondaryBackgroundColor = "#e0e9ff"
+# Primary Color (For Buttons, Highlights, and CTAs)
+primaryColor = "#007CC7"
+
+# Main Content Background (Clean and Minimal)
+backgroundColor = "#f5e8a9"
+
+# Sidebar/Interactive Widgets Background (Elegant and Eye-Calming)
+secondaryBackgroundColor = "#f0fae6"
+
+# Text Color (Readable and Elegant)
+textColor = "#2E2E2E"
+
+# Font Family
 font = "sans serif"
+# Modern fonts like 'sans serif' 'Roboto', 'Nunito', or 'Open Sans'
+
 
 [client]
 toolbarMode = "auto"
