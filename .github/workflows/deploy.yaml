@@ -6,10 +6,11 @@ on:
       - main
     paths:
       - '.github/**'
-      - 'instructions/**'
-      - 'metadata/**'
-      - 'server/**'
-      - 'tests/**'
+      - '.streamlit/**'
+      - 'app/**'
+      - 'assets/**'
+      - 'Dockerfile'
+      - 'requirements.txt'
   workflow_dispatch:
 
 jobs:
@@ -20,6 +21,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create Firebase config file
+        run: |
+          echo '${{ secrets.FIREBASE_CONFIG }}' > firebase-config.json
+
+      - name: Create .env file
+        run: |
+          echo "ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}" > .env
+          echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
+
       - name: Build & push Docker image
         uses: mr-smithers-excellent/docker-build-push@v6
         with:
@@ -28,3 +38,10 @@ jobs:
           registry: docker.io
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Trigger DigitalOcean App Platform Deployment
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            "https://api.digitalocean.com/v2/apps/${{ secrets.DO_APP_ID }}/deployments"
