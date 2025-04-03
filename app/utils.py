@@ -192,6 +192,8 @@ def generate_pdf(doctor_name, patient_name, treatment_plan, currency_symbol="SAR
     return filename
 
 
+
+
 def update_tooth(tooth_number):
     """Update tooth condition in session state."""
     selected_value = st.session_state[f"tooth_{tooth_number}"]
