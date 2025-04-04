@@ -2,10 +2,10 @@
 
 [theme]
 # Primary Color (For Buttons, Highlights, and CTAs)
-primaryColor = "#007CC7"
+primaryColor = "#faf9f6"
 
 # Main Content Background (Clean and Minimal)
-backgroundColor = "#f5e8a9"
+backgroundColor = "#fffff0"
 
 # Sidebar/Interactive Widgets Background (Elegant and Eye-Calming)
 secondaryBackgroundColor = "#f0fae6"
