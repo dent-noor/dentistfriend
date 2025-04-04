@@ -12,51 +12,51 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-
-st.markdown(
-    """
-    <style>
-    .beautiful-text {
-        font-size: 90px; 
-        color: white; 
-        text-align: center; 
-        padding: 1.5px; 
-        border-radius: 25px;
-        text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
-
-        background-image: url('https://source.unsplash.com/1600x900/?abstract,nature');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-
-        /* Adding semi-transparent overlay */
-        background-color: #807070; 
-        background-blend-mode: overlay;
-    }
-    .stButton > button {
-            background-color: #87d2f5;
-            color: black;
-            padding: 15px 10px;
-            border-radius: 10px;
-            border: none;
-            font-size: 16px;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+with st.container():
+    st.markdown(
+        """
+        <style>
+        .beautiful-text {
+            font-size: 90px; 
+            color: white; 
+            text-align: center; 
+            padding: 1.5px; 
+            border-radius: 25px;
+            text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
+    
+            background-image: url('https://source.unsplash.com/1600x900/?abstract,nature');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+    
+            /* Adding semi-transparent overlay */
+            background-color: #807070; 
+            background-blend-mode: overlay;
         }
-    .stButton > button:hover {
-            background-color: #03b1fc;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-        }
-    </style>
-
-    <div class="beautiful-text">
-        dentistFriend.in
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        .stButton > button {
+                background-color: #87d2f5;
+                color: black;
+                padding: 15px 10px;
+                border-radius: 10px;
+                border: none;
+                font-size: 16px;
+                font-weight: bold;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+            }
+        .stButton > button:hover {
+                background-color: #03b1fc;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+            }
+        </style>
+    
+        <div class="beautiful-text">
+            dentistFriend.in
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Initialize Firebase
 if not firebase_admin._apps:
