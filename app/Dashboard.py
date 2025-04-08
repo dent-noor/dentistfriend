@@ -1,9 +1,19 @@
 import hashlib
 import datetime
+import requests
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 from utils import show_footer
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env
+load_dotenv()
+
+# Access the API key
+api_key = os.getenv("FIREBASE_API_KEY")
+
 
 # Configure Streamlit page settings
 st.set_page_config(
@@ -12,51 +22,51 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-with st.container():
-    st.markdown(
-        """
-        <style>
-        .beautiful-text {
-            font-size: 90px; 
-            color: white; 
-            text-align: center; 
-            padding: 1.5px; 
-            border-radius: 25px;
-            text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
-    
-            background-image: url('https://source.unsplash.com/1600x900/?abstract,nature');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-    
-            /* Adding semi-transparent overlay */
-            background-color: #807070; 
-            background-blend-mode: overlay;
+
+st.markdown(
+    """
+    <style>
+    .beautiful-text {
+        font-size: 80px; 
+        color: white; 
+        text-align: center; 
+        padding: 1.5px; 
+        border-radius: 25px;
+        text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
+
+        background-image: url('https://source.unsplash.com/1600x900/?abstract,nature');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+
+        /* Adding semi-transparent overlay */
+        background-color: #807070; 
+        background-blend-mode: overlay;
+    }
+    .stButton > button {
+            background-color: #87d2f5;
+            color: black;
+            padding: 15px 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
-        .stButton > button {
-                background-color: #87d2f5;
-                color: black;
-                padding: 15px 10px;
-                border-radius: 10px;
-                border: none;
-                font-size: 16px;
-                font-weight: bold;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                transition: all 0.3s ease;
-            }
-        .stButton > button:hover {
-                background-color: #03b1fc;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-            }
-        </style>
-    
-        <div class="beautiful-text">
-            dentistFriend.in
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    .stButton > button:hover {
+            background-color: #03b1fc;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+
+    <div class="beautiful-text">
+        dentistFriend.in
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # Initialize Firebase
 if not firebase_admin._apps:
@@ -67,6 +77,7 @@ database = firestore.client()
 
 def main():
     #st.image('assets/head.png')
+
     st.markdown("\n")
     st.markdown(
         """
@@ -115,9 +126,9 @@ def main():
                 st.session_state.clear()  # Clear session state on logout
                 st.rerun()  # Refresh the app
 
-        # with col2:
-        #     if st.button("Reset Password", icon="🔄", use_container_width=True):
-        #         reset_password()
+        #with col2:
+        #    if st.button("Reset Password", icon="🔄", use_container_width=True):
+        #       reset_password()
 
         # with col3:
         #     if st.button("Reset Email", icon="📧", use_container_width=True):
@@ -164,7 +175,7 @@ def show_info():
             .custom-container {
                 font-size: 20px;
                 background-color: #87d2f5;
-                padding: 24px;
+                padding: 30px;
                 border-radius: 10px;
             }
             </style>
@@ -185,12 +196,15 @@ def show_info():
 
 
     with col2:
-        tab1, tab2 = st.tabs(["Sign In", "Sign Up"])
+        tab1, tab2, tab3= st.tabs(["Sign In", "Sign Up", "Reset Password"])
         with tab1:
             sign_in()
 
         with tab2:
             sign_up()
+
+        with tab3:
+            reset_password()
 
 
 def show_nav():
@@ -292,9 +306,9 @@ def sign_in():
     email = st.text_input("Email", key="signin_email")
     password = st.text_input("Password", type="password", key="signin_password")
 
-    col1, col2 = st.columns(2)  # Split into two columns
+    col1, col2, col3 = st.columns(3)  # Split into two columns
 
-    with col1:
+    with col2:
         if st.button("Log In", icon="🔓", use_container_width=True):
             if not email or not password:
                 st.error("Please enter both email and password.")
@@ -324,117 +338,29 @@ def sign_in():
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-    with col2:
-        if st.button("Reset Password", icon="🔄", use_container_width=True):
-            reset_password()
-
-
 
 def reset_password():
     st.subheader("Reset Your Password")
-    email = st.text_input("Enter your email", key="reset_email")
+    email = st.text_input("Enter your registered email")
 
-    if st.button("Send Reset Email", icon="🔄", use_container_width=True):
+    if st.button("Send Password Reset Email"):
         if not email:
-            st.error("Please enter your email address.")
+            st.warning("Please enter your email.")
+            return
+
+        endpoint = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
+        payload = {
+            "requestType": "PASSWORD_RESET",
+            "email": email
+        }
+
+        response = requests.post(endpoint, json=payload)
+
+        if response.status_code == 200:
+            st.success(f"Password reset email sent to {email}. Please check your inbox.")
         else:
-            try:
-                # Setup action code settings for Firebase password reset
-                action_code_settings = auth.ActionCodeSettings(
-                    url="https://squid-app-yfhsi.ondigitalocean.app/reset-password'",  # Replace with your app's URL as needed
-                    handle_code_in_app=False
-                )
-                # Generate the password reset link
-                reset_link = auth.generate_password_reset_link(email, action_code_settings)
-                st.success(f"Password reset email sent! Please check your inbox.\n\nReset link: {reset_link}")
-            except firebase_admin.auth.UserNotFoundError:
-                st.error("Email not found. Please check the email provided.")
-            except Exception as e:
-                st.error(f"Error: {e}")
-
-
-# To integrate reset_password into your app, you might call it in sign_in:
-# with col2:
-#     if st.button("Reset Password", icon="🔄", use_container_width=True):
-#          reset_password()
-
-# def reset_password():
-#     st.error("This feature is currently development")
-    # email = st.text_input("Enter your email")
-    # if st.button("Send Reset Email", icon="🔄", use_container_width=True):
-    #     if not email:
-    #         st.error("Please enter your email address.")
-    #     else:
-    #         try:
-    #             # TODO: https://firebase.google.com/docs/auth/admin/email-action-links
-    #             action_code_settings = auth.ActionCodeSettings(
-    #                 url="http://127.0.0.1:8501",
-    #             )
-    #             auth.generate_password_reset_link(email, action_code_settings)
-    #             st.success("Password reset email sent. Check your inbox.")
-    #         except firebase_admin.auth.UserNotFoundError:
-    #             st.error("Email not found.")
-    #         except Exception as e:
-    #             st.error(f"Error: {e}")
-
-
-def reset_email():
-    st.error("This feature is currently in development")
-    # Get the currently stored email from session state
-    # current_email = st.session_state.get("doctor_email")
-    # new_email = st.text_input("New Email Address")
-
-    # if st.button("Update Email", icon="📧", use_container_width=True):
-    #     if not new_email:
-    #         st.error("Please enter a new email address.")
-    #         return
-
-    #     try:
-    #         # Fetch the user details using the current email
-    #         user = auth.get_user_by_email(current_email)
-    #         auth.update_user(user.uid, email=new_email)  # Update email in authentication system
-
-    #         # Retrieve doctor data from Firestore
-    #         doctor_doc = database.collection("doctors").document(current_email).get()
-    #         doctor_data = doctor_doc.to_dict()
-
-    #         # Update email field in the retrieved data
-    #         doctor_data["email"] = new_email
-    #         database.collection("doctors").document(new_email).set(doctor_data)  # Save with new email
-
-    #         # Delete the old document associated with the previous email
-    #         database.collection("doctors").document(current_email).delete()
-
-    #         # Update session state with the new email
-    #         st.session_state["doctor_email"] = new_email
-    #         st.success("Email updated successfully!")
-    #         st.rerun()  # Refresh the app to reflect changes
-
-    #     except firebase_admin.auth.EmailAlreadyExistsError:
-    #         st.error("Email already in use.")  # Handle case where new email is already taken
-    #     except Exception as e:
-    #         st.error(f"Error: {e}")  # Handle any other unexpected errors
-
-
-def delete_account():
-    st.error("This feature is currently in development")
-    # email = st.session_state.get("doctor_email")
-    # if st.button("Confirm Deletion", icon="⚠️", use_container_width=True):
-    #     try:
-    #         # Delete document from Firestore
-    #         database.collection("doctors").document(email).delete()
-
-    #         # Delete user from Firebase Authentication
-    #         user = auth.get_user_by_email(email)
-    #         auth.delete_user(user.uid)
-
-    #         st.success("Account deleted successfully!")
-    #         st.session_state.clear()  # Clear session state
-    #         st.rerun()  # Refresh the app
-    #     except firebase_admin.auth.UserNotFoundError:
-    #         st.error("User not found.")
-    #     except Exception as e:
-    #         st.error(f"Error: {e}")
+            error_info = response.json().get("error", {}).get("message", "Unknown error")
+            st.error(f"Failed to send reset email: {error_info}")
 
 
 if __name__ == "__main__":

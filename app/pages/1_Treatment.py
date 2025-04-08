@@ -84,6 +84,13 @@ def load_settings(doctor_email):
 
 
 def main():
+    if st.session_state["logged_in"]:
+        # ✅ Show logout on sidebar
+        with st.sidebar:
+            #st.markdown("---")
+            if st.button("Logout", use_container_width=True):
+                st.session_state.clear()
+                st.rerun()
     st.title("Dental Treatment Planner")
 
     # Authentication check - prevent access without login
